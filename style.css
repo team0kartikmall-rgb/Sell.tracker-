@@ -1,0 +1,338 @@
+/* ===============================
+   Restock App - style.css
+   Theme: Black & Gold Elegance
+   =============================== */
+
+:root {
+  --primary-bg: #000000;
+  --secondary-bg: #111111;
+  --accent-color: #d4af37;
+  --text-light: #f5f5f5;
+  --text-muted: #aaaaaa;
+  --border-radius: 12px;
+  --transition: all 0.3s ease-in-out;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Poppins', sans-serif;
+}
+
+body {
+  background-color: var(--primary-bg);
+  color: var(--text-light);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+header {
+  background: var(--secondary-bg);
+  padding: 20px 40px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--accent-color);
+}
+
+header h1 {
+  font-size: 1.8rem;
+  color: var(--accent-color);
+  letter-spacing: 1px;
+}
+
+nav ul {
+  display: flex;
+  list-style: none;
+  gap: 20px;
+}
+
+nav ul li a {
+  color: var(--text-light);
+  text-decoration: none;
+  font-weight: 500;
+  transition: var(--transition);
+}
+
+nav ul li a:hover {
+  color: var(--accent-color);
+}
+
+main {
+  flex: 1;
+  display: flex;
+  padding: 30px;
+  gap: 30px;
+}
+
+.sidebar {
+  width: 250px;
+  background: var(--secondary-bg);
+  border-radius: var(--border-radius);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.sidebar button {
+  background: none;
+  border: 1px solid var(--accent-color);
+  color: var(--text-light);
+  padding: 10px;
+  border-radius: var(--border-radius);
+  transition: var(--transition);
+  cursor: pointer;
+}
+
+.sidebar button:hover {
+  background: var(--accent-color);
+  color: #000;
+}
+
+.content {
+  flex: 1;
+  background: var(--secondary-bg);
+  border-radius: var(--border-radius);
+  padding: 25px;
+  overflow-y: auto;
+}
+
+.section-title {
+  font-size: 1.5rem;
+  color: var(--accent-color);
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--accent-color);
+  padding-bottom: 8px;
+}
+
+.card {
+  background: #1a1a1a;
+  border-radius: var(--border-radius);
+  padding: 20px;
+  margin-bottom: 20px;
+  transition: var(--transition);
+  border: 1px solid transparent;
+}
+
+.card:hover {
+  border: 1px solid var(--accent-color);
+  transform: translateY(-3px);
+}
+
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--text-light);
+}
+
+th, td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #333;
+}
+
+th {
+  color: var(--accent-color);
+  font-weight: 600;
+}
+
+tr:hover {
+  background-color: rgba(255, 215, 0, 0.05);
+}
+
+button.primary {
+  background-color: var(--accent-color);
+  color: #000;
+  padding: 10px 18px;
+  border: none;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-weight: 600;
+  transition: var(--transition);
+}
+
+button.primary:hover {
+  background-color: #ffda63;
+}
+
+button.secondary {
+  background: none;
+  color: var(--accent-color);
+  border: 1px solid var(--accent-color);
+  padding: 10px 18px;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+button.secondary:hover {
+  background: var(--accent-color);
+  color: #000;
+}
+
+input, select, textarea {
+  background: #1a1a1a;
+  color: var(--text-light);
+  border: 1px solid #333;
+  border-radius: var(--border-radius);
+  padding: 10px;
+  width: 100%;
+  margin-top: 6px;
+  margin-bottom: 14px;
+  transition: var(--transition);
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--accent-color);
+  outline: none;
+}
+
+.toast {
+  position: fixed;
+  bottom: 25px;
+  right: 25px;
+  background: var(--accent-color);
+  color: #000;
+  padding: 14px 24px;
+  border-radius: var(--border-radius);
+  font-weight: 600;
+  opacity: 0;
+  transform: translateY(20px);
+  animation: fadeInOut 3s ease forwards;
+}
+
+@keyframes fadeInOut {
+  0% { opacity: 0; transform: translateY(20px); }
+  10%, 90% { opacity: 1; transform: translateY(0); }
+  100% { opacity: 0; transform: translateY(-20px); }
+}
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  visibility: hidden;
+  opacity: 0;
+  transition: var(--transition);
+}
+
+.modal.active {
+  visibility: visible;
+  opacity: 1;
+}
+
+.modal-content {
+  background: var(--secondary-bg);
+  padding: 30px;
+  border-radius: var(--border-radius);
+  width: 90%;
+  max-width: 500px;
+  border: 1px solid var(--accent-color);
+}
+
+footer {
+  background: var(--secondary-bg);
+  text-align: center;
+  padding: 15px 0;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  border-top: 1px solid #222;
+}
+
+/* Charts & Analytics */
+.chart {
+  width: 100%;
+  height: 250px;
+  background: #0e0e0e;
+  border: 1px solid #222;
+  border-radius: var(--border-radius);
+  padding: 10px;
+}
+
+.pro-badge {
+  background: var(--accent-color);
+  color: #000;
+  padding: 3px 10px;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 0.8rem;
+  margin-left: 10px;
+}
+
+.locked {
+  filter: blur(3px);
+  position: relative;
+}
+
+.locked::after {
+  content: '🔒 PRO Feature';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.7);
+  padding: 8px 15px;
+  border-radius: var(--border-radius);
+  color: var(--accent-color);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 900px) {
+  main {
+    flex-direction: column;
+  }
+  .sidebar {
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .sidebar button {
+    flex: 1 1 45%;
+  }
+}
+restock-backend/
+├─ pom.xml
+├─ src/main/java/com/restock/
+│  ├─ RestockApplication.java
+│  ├─ config/
+│  │  └─ WebConfig.java
+│  ├─ controller/
+│  │  ├─ ProductController.java
+│  │  ├─ SaleController.java
+│  │  ├─ PurchaseController.java
+│  │  ├─ BillController.java
+│  │  └─ BillingController.java
+│  ├─ dto/
+│  │  ├─ CreateSaleRequest.java
+│  │  └─ ... (small DTOs included inline below)
+│  ├─ model/
+│  │  ├─ Product.java
+│  │  ├─ Sale.java
+│  │  ├─ Purchase.java
+│  │  ├─ Bill.java
+│  │  ├─ Coupon.java
+│  │  └─ Subscription.java
+│  ├─ repository/
+│  │  ├─ ProductRepository.java
+│  │  ├─ SaleRepository.java
+│  │  └─ ... 
+│  └─ service/
+│     ├─ ProductService.java
+│     └─ BusinessService.java
+└─ src/main/resources/
+   ├─ application.properties

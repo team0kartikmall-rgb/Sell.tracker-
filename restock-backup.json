@@ -1,0 +1,64 @@
+{
+  "products": [
+    {
+      "id": "rC41MV1I8",
+      "sku": "RSK-1001",
+      "name": "Premium Notebooks (Pack of 10)",
+      "desc": "A pack of ruled notebooks",
+      "price": 120,
+      "cost": 70,
+      "qty": 50,
+      "location": "Main Store",
+      "low": 10,
+      "image": null
+    },
+    {
+      "id": "rCOH7KOE7",
+      "sku": "RSK-1002",
+      "name": "Ballpoint Pens (Blue)",
+      "desc": "Box of 50 blue pens",
+      "price": 200,
+      "cost": 120,
+      "qty": 120,
+      "location": "Warehouse A",
+      "low": 30,
+      "image": null
+    },
+    {
+      "id": "rDMXWEPL9",
+      "sku": "RSK-1003",
+      "name": "LED Bulb 9W",
+      "desc": "Energy savers",
+      "price": 85,
+      "cost": 40,
+      "qty": 5,
+      "location": "Main Store",
+      "low": 8,
+      "image": null
+    }
+  ],
+  "sales": [],
+  "purchases": [],
+  "bills": [],
+  "coupons": [
+    {
+      "code": "PROFREE",
+      "type": "pro",
+      "durationDays": 365,
+      "uses": 1,
+      "expires": "2026-12-31"
+    },
+    {
+      "code": "TRIAL7",
+      "type": "pro",
+      "durationDays": 7,
+      "uses": 100,
+      "expires": "2026-12-31"
+    }
+  ],
+  "subscription": {
+    "isPro": false,
+    "plan": null,
+    "expiry": null
+  }
+}
