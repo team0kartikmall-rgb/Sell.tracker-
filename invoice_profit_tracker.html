@@ -1,0 +1,553 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sales + Instant Invoice + Monthly Profit After Tax</title>
+  <style>
+    :root{
+      --bg:#0b0b0d; --card:#0f1720; --muted:#9aa4b2; --accent:#f6c84c; --glass: rgba(255,255,255,0.03);
+      --radius:12px; color-scheme: dark;
+    }
+    body{
+      background: linear-gradient(180deg,#05060a 0%, #0a0b10 100%);
+      color:#e6eef8; font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      margin:16px; -webkit-font-smoothing:antialiased;
+    }
+    .container{max-width:1100px;margin:10px auto;padding:18px;}
+    header{display:flex;gap:16px;align-items:center;justify-content:space-between;margin-bottom:18px}
+    h1{font-size:20px;margin:0;color:var(--accent)}
+    .card{background:var(--card);border-radius:var(--radius);padding:14px;box-shadow:0 4px 18px rgba(0,0,0,0.6)}
+    .grid{display:grid;grid-template-columns:1fr 380px;gap:14px}
+    label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+    input[type="text"], input[type="number"], select {
+      width:100%;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);
+      background:var(--glass); color:inherit; outline:none;
+    }
+    button{background:linear-gradient(90deg,#f6c84c,#f0b63b);border:none;padding:8px 12px;border-radius:10px;cursor:pointer;font-weight:600}
+    .muted{color:var(--muted);font-size:13px}
+    table{width:100%;border-collapse:collapse;margin-top:10px;font-size:14px}
+    th,td{padding:8px;text-align:left;border-bottom:1px dashed rgba(255,255,255,0.03)}
+    .row-actions{display:flex;gap:8px}
+    .btn-ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);padding:6px 8px;border-radius:8px;color:var(--muted)}
+    .summary{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+    .summary .item{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.015));padding:10px;border-radius:10px;min-width:160px}
+    .small{font-size:13px;color:var(--muted)}
+    .note{font-size:12px;color:#cbd5e1;margin-top:8px}
+    /* Modal / invoice */
+    .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.55);display:none;align-items:center;justify-content:center;z-index:50}
+    .modal{width:720px;max-width:95%;background:#071022;border-radius:12px;padding:18px;box-shadow:0 8px 40px rgba(0,0,0,0.7)}
+    .invoice{background:#0b1220;padding:18px;border-radius:10px;color:#e6eef8}
+    .invoice header{display:flex;justify-content:space-between;align-items:flex-start}
+    .invoice table{width:100%;margin-top:12px}
+    .print-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+    @media (max-width:880px){ .grid{grid-template-columns:1fr} .summary .item{min-width:140px} }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <h1>Restock — Sales & Invoice + Monthly Profit After Tax</h1>
+        <div class="muted">Instant invoice button restored above sales; monthly profit-after-tax uses official gov tax slabs (annualized method).</div>
+      </div>
+      <div>
+        <button id="addSample">Add Sample Sale</button>
+      </div>
+    </header>
+
+    <div class="grid">
+      <!-- Left: Sales form & records -->
+      <div>
+        <div class="card">
+          <h3 style="margin:0 0 10px 0">New Sale</h3>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div>
+              <label>Item / Description</label>
+              <input id="itemName" type="text" placeholder="e.g., Blue T-shirt">
+            </div>
+            <div>
+              <label>Invoice #</label>
+              <input id="invoiceNo" type="text" placeholder="Auto or type">
+            </div>
+            <div>
+              <label>Sale Amount (₹)</label>
+              <input id="saleAmount" type="number" step="0.01" min="0" value="0">
+            </div>
+            <div>
+              <label>Cost / Expense (COGS) (₹)</label>
+              <input id="costAmount" type="number" step="0.01" min="0" value="0">
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
+            <button id="addSaleBtn">Add Sale</button>
+            <button id="invoiceAboveBtn" class="btn-ghost">Invoice (above list)</button>
+            <div class="muted" style="margin-left:auto">Records show month selection below</div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <h3 style="margin:0">Sales Records</h3>
+            <select id="monthSelect" style="margin-left:10px">
+              <!-- auto populate months -->
+            </select>
+            <div style="margin-left:auto" class="small muted">Select month to compute monthly totals</div>
+          </div>
+
+          <table id="salesTable" aria-live="polite">
+            <thead>
+              <tr>
+                <th>Inv #</th><th>Item</th><th>Sale (₹)</th><th>Cost (₹)</th><th>Profit (₹)</th><th></th>
+              </tr>
+            </thead>
+            <tbody id="salesTbody"></tbody>
+          </table>
+
+          <div class="summary" id="summaryArea">
+            <!-- summary cards -->
+          </div>
+          <div class="note">
+            Note: To calculate monthly post-tax profit we annualize this month's net profit, apply the progressive slabs, then pro-rate tax back to monthly. Tax slabs sourced from IncomeTax Dept. (new/default regime). :contentReference[oaicite:1]{index=1}
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Profit summary & tax details -->
+      <div>
+        <div class="card">
+          <h3 style="margin:0 0 10px 0">Monthly Profit After Tax (Add-On)</h3>
+          <div>
+            <label>Selected Month</label>
+            <div id="selectedMonthLabel" class="muted">—</div>
+          </div>
+
+          <div style="margin-top:12px">
+            <div style="display:flex;gap:10px">
+              <div style="flex:1" class="summary-card">
+                <div class="small muted">Total Sales</div>
+                <div id="totalSales" style="font-size:20px">₹ 0.00</div>
+              </div>
+              <div style="flex:1" class="summary-card">
+                <div class="small muted">Total Costs</div>
+                <div id="totalCosts" style="font-size:20px">₹ 0.00</div>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:10px;margin-top:10px">
+              <div style="flex:1" class="summary-card">
+                <div class="small muted">Net Profit (month)</div>
+                <div id="netProfit" style="font-size:20px">₹ 0.00</div>
+              </div>
+              <div style="flex:1" class="summary-card">
+                <div class="small muted">Estimated Monthly Tax</div>
+                <div id="monthlyTax" style="font-size:20px">₹ 0.00</div>
+              </div>
+            </div>
+
+            <div style="margin-top:12px">
+              <div class="small muted">Profit After Tax (monthly)</div>
+              <div id="profitAfterTax" style="font-size:22px;font-weight:700">₹ 0.00</div>
+            </div>
+
+            <div style="margin-top:12px" class="muted small">
+              Calculation method: NetMonth × 12 → compute annual tax (progressive) → divide by 12 to get monthly tax estimate. Use this as a close estimate (for accurate filing use accountant). Tax slabs used: official Income Tax Dept. table (new/default regime). :contentReference[oaicite:2]{index=2}
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:12px">
+          <h4 style="margin:0">Tax Slabs Used (New / Default regime — simplified)</h4>
+          <div class="muted small" style="margin-top:8px;line-height:1.5">
+            • Up to ₹3,00,000 — Nil<br>
+            • ₹3,00,001 – ₹7,00,000 — 5% on amount above ₹3,00,000<br>
+            • ₹7,00,001 – ₹10,00,000 — 10% on amount above ₹7,00,000 (plus previous slab) <br>
+            • ₹10,00,001 – ₹50,00,000 — 30% on amount above ₹10,00,000 <br>
+            (Progressive stacking applied. Source: Income Tax Dept.) :contentReference[oaicite:3]{index=3}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal for invoice -->
+  <div id="modal" class="modal-backdrop" role="dialog" aria-hidden="true">
+    <div class="modal" role="document" aria-labelledby="invTitle">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h3 id="invTitle">Invoice Preview</h3>
+        <div style="display:flex;gap:8px">
+          <button id="printBtn">Print</button>
+          <button id="closeModal" class="btn-ghost">Close</button>
+        </div>
+      </div>
+
+      <div class="invoice" id="invoiceArea">
+        <!-- Invoice content injected here -->
+      </div>
+
+      <div class="print-actions">
+        <button id="downloadPdf" class="btn-ghost">Download PDF (browser print)</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * Re-imagined behaviour:
+     * - Sales rows are stored in localStorage (keeps feature persistence).
+     * - There is a restored "Invoice (above list)" button that uses the currently selected sale row (or if none, opens blank invoice for manual fill).
+     * - Monthly Profit After Tax: sums the selected month's net profit, annualizes (×12), computes progressive tax, then monthly tax = annualTax/12.
+     *
+     * Tax slabs and logic below reflect the "New / Default" regime simplified table from Indian govt (source linked).
+     * If your product sells outside India or tax rules change, replace computeAnnualTax() accordingly.
+     */
+
+    // --- Utilities & Data
+    const SALES_KEY = 'restock_sales_v1';
+    const sales = JSON.parse(localStorage.getItem(SALES_KEY) || '[]');
+
+    // Simple month list (current + last 11)
+    const monthSelect = document.getElementById('monthSelect');
+    const months = [];
+    const now = new Date();
+    for(let i=0;i<12;i++){
+      const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+      months.push({label: d.toLocaleString('default',{month:'short',year:'numeric'}), key});
+    }
+    months.forEach(m => {
+      const opt = document.createElement('option'); opt.value = m.key; opt.textContent = m.label;
+      monthSelect.appendChild(opt);
+    });
+    monthSelect.value = months[0].key;
+
+    // DOM refs
+    const salesTbody = document.getElementById('salesTbody');
+    const totalSalesEl = document.getElementById('totalSales');
+    const totalCostsEl = document.getElementById('totalCosts');
+    const netProfitEl = document.getElementById('netProfit');
+    const monthlyTaxEl = document.getElementById('monthlyTax');
+    const profitAfterTaxEl = document.getElementById('profitAfterTax');
+    const selectedMonthLabel = document.getElementById('selectedMonthLabel');
+
+    // Invoice modal
+    const modal = document.getElementById('modal');
+    const invoiceArea = document.getElementById('invoiceArea');
+
+    // Inputs
+    const itemName = document.getElementById('itemName');
+    const invoiceNo = document.getElementById('invoiceNo');
+    const saleAmount = document.getElementById('saleAmount');
+    const costAmount = document.getElementById('costAmount');
+
+    // --- Tax calculation (based on new/default regime simplified)
+    // This function expects an annual taxable income (in ₹) and returns computed annual tax (INR).
+    // IMPORTANT: This is simplified and does NOT include rebate section 87A specifics or cess/surcharge. Add as needed.
+    function computeAnnualTax(annualIncome){
+      let tax = 0;
+      // Using slabs (new/default) as used above (simplified):
+      // Up to 3,00,000: 0
+      // 3,00,001 - 7,00,000: 5%
+      // 7,00,001 - 10,00,000: 10%
+      // 10,00,001 - 50,00,000: 30%
+      // Over 50,00,000: 30% (for this simplified version; surcharge rules omitted)
+      const slabs = [
+        {limit:300000, rate:0},
+        {limit:700000, rate:0.05},
+        {limit:1000000, rate:0.10},
+        {limit:5000000, rate:0.30},
+        {limit: Infinity, rate:0.30}
+      ];
+
+      let remaining = annualIncome;
+      let lower = 0;
+      for(const s of slabs){
+        const upper = s.limit;
+        if(annualIncome > lower){
+          const taxableInSlab = Math.max(0, Math.min(annualIncome, upper) - lower);
+          tax += taxableInSlab * s.rate;
+        }
+        lower = upper;
+        if(annualIncome <= upper) break;
+      }
+
+      // Optionally apply rebate under section 87A: if annualTaxable <= 5L (or rules change), but we will keep simple
+      // Also add Health & Education Cess 4% (commonly applied) — include it to be closer to real world
+      const cess = tax * 0.04;
+      tax += cess;
+
+      return Math.max(0, tax);
+    }
+
+    // --- CRUD for sales
+    function saveSales(){
+      localStorage.setItem(SALES_KEY, JSON.stringify(sales));
+    }
+
+    function addSale(row){
+      sales.push(row);
+      saveSales();
+      renderSales();
+      computeMonthSummary();
+    }
+
+    function removeSale(index){
+      sales.splice(index,1);
+      saveSales();
+      renderSales();
+      computeMonthSummary();
+    }
+
+    function renderSales(){
+      salesTbody.innerHTML = '';
+      const selectedMonth = monthSelect.value;
+      sales.forEach((s, idx) => {
+        // only show sales in selected month
+        const rowMonth = s.date.slice(0,7); // 'YYYY-MM'
+        if(rowMonth !== selectedMonth) return;
+        const tr = document.createElement('tr');
+        const profit = (Number(s.sale) - Number(s.cost)) || 0;
+        tr.innerHTML = `
+          <td>${s.invoice || ''}</td>
+          <td>${escapeHtml(s.item)}</td>
+          <td>₹ ${Number(s.sale).toFixed(2)}</td>
+          <td>₹ ${Number(s.cost).toFixed(2)}</td>
+          <td>₹ ${profit.toFixed(2)}</td>
+          <td>
+            <div class="row-actions">
+              <button class="btn-ghost" data-idx="${idx}" data-invoice>Invoice</button>
+              <button class="btn-ghost" data-idx="${idx}" data-delete>Delete</button>
+            </div>
+          </td>`;
+        salesTbody.appendChild(tr);
+      });
+
+      // wire up invoice / delete on visible buttons
+      document.querySelectorAll('button[data-invoice]').forEach(b=>{
+        b.onclick=(e)=>{
+          const idx = Number(b.dataset.idx);
+          openInvoiceForSale(idx);
+        }
+      });
+      document.querySelectorAll('button[data-delete]').forEach(b=>{
+        b.onclick=(e)=>{
+          const idx = Number(b.dataset.idx);
+          // Find actual index among filtered items - we stored idx as global index in sales array
+          if(confirm('Delete this sale?')) removeSale(idx);
+        }
+      });
+    }
+
+    // escape helper
+    function escapeHtml(text){
+      return String(text||'').replace(/[&<>"']/g, (m) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+    }
+
+    // --- Month computations & summary
+    function computeMonthSummary(){
+      const selectedMonth = monthSelect.value;
+      selectedMonthLabel.textContent = new Date(selectedMonth+'-01').toLocaleString('default',{month:'long',year:'numeric'});
+      const filtered = sales.filter(s => s.date.slice(0,7) === selectedMonth);
+      const totalSales = filtered.reduce((a,b)=>a + Number(b.sale || 0), 0);
+      const totalCosts = filtered.reduce((a,b)=>a + Number(b.cost || 0), 0);
+      const net = totalSales - totalCosts;
+
+      totalSalesEl.textContent = `₹ ${totalSales.toFixed(2)}`;
+      totalCostsEl.textContent = `₹ ${totalCosts.toFixed(2)}`;
+      netProfitEl.textContent = `₹ ${net.toFixed(2)}`;
+
+      // Annualize and compute tax
+      const annualized = Math.max(0, net * 12);
+      const annualTax = computeAnnualTax(annualized);
+      const monthlyTax = annualTax / 12;
+      const profitAfterTax = net - monthlyTax;
+
+      monthlyTaxEl.textContent = `₹ ${monthlyTax.toFixed(2)}`;
+      profitAfterTaxEl.textContent = `₹ ${profitAfterTax.toFixed(2)}`;
+      renderSummaryCards(totalSales, totalCosts, net, monthlyTax, profitAfterTax);
+    }
+
+    function renderSummaryCards(totalSales, totalCosts, net, monthlyTax, profitAfterTax){
+      const summary = document.getElementById('summaryArea');
+      summary.innerHTML = '';
+      const items = [
+        {title:'Total Sales', val:`₹ ${totalSales.toFixed(2)}`},
+        {title:'Total Costs', val:`₹ ${totalCosts.toFixed(2)}`},
+        {title:'Net (month)', val:`₹ ${net.toFixed(2)}`},
+        {title:'Est. Monthly Tax', val:`₹ ${monthlyTax.toFixed(2)}`},
+        {title:'Profit After Tax', val:`₹ ${profitAfterTax.toFixed(2)}`}
+      ];
+      items.forEach(it => {
+        const div = document.createElement('div');
+        div.className = 'item';
+        div.innerHTML = `<div class="small muted">${it.title}</div><div style="font-weight:700;margin-top:6px">${it.val}</div>`;
+        summary.appendChild(div);
+      });
+    }
+
+    // --- Invoice generation
+    function openInvoiceForSale(index){
+      const sale = sales[index];
+      if(!sale) return alert('Sale not found');
+      const html = `
+        <header>
+          <div>
+            <h2 style="margin:0;color:var(--accent)">Restock — Invoice</h2>
+            <div class="small muted">Invoice #: ${escapeHtml(sale.invoice || '')}</div>
+          </div>
+          <div style="text-align:right">
+            <div class="muted small">Date: ${new Date(sale.date).toLocaleDateString()}</div>
+            <div style="font-weight:700;font-size:18px;margin-top:6px">₹ ${Number(sale.sale).toFixed(2)}</div>
+          </div>
+        </header>
+
+        <table>
+          <thead><tr><th style="text-align:left">Item</th><th>Qty</th><th>Rate</th><th style="text-align:right">Amount</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>${escapeHtml(sale.item)}</td>
+              <td>1</td>
+              <td>₹ ${Number(sale.sale).toFixed(2)}</td>
+              <td style="text-align:right">₹ ${Number(sale.sale).toFixed(2)}</td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr><td colspan="3" style="text-align:right">Subtotal</td><td style="text-align:right">₹ ${Number(sale.sale).toFixed(2)}</td></tr>
+            <tr><td colspan="3" style="text-align:right">Cost / Deductible</td><td style="text-align:right">₹ ${Number(sale.cost).toFixed(2)}</td></tr>
+            <tr><td colspan="3" style="text-align:right;font-weight:700">Net</td><td style="text-align:right;font-weight:700">₹ ${(Number(sale.sale)-Number(sale.cost)).toFixed(2)}</td></tr>
+          </tfoot>
+        </table>
+
+        <div style="margin-top:12px" class="muted small">
+          This is an instant invoice generated by Restock. Use browser Print to save/print. For tax filing and official records consult an accountant.
+        </div>
+      `;
+      invoiceArea.innerHTML = html;
+      openModal();
+    }
+
+    // "Invoice (above list)" button: if a row is selected (none UI for selection yet) we'll open a blank invoice with current input values
+    document.getElementById('invoiceAboveBtn').addEventListener('click', ()=>{
+      // create invoice from current form fields (instant bill)
+      const inv = {
+        invoice: invoiceNo.value || `INV-${Date.now().toString().slice(-6)}`,
+        item: itemName.value || 'Item',
+        sale: Number(saleAmount.value || 0).toFixed(2),
+        cost: Number(costAmount.value || 0).toFixed(2),
+        date: new Date().toISOString()
+      };
+      // Render invoice area and show modal (without storing in sales list unless user chooses add)
+      const html = `
+        <header>
+          <div>
+            <h2 style="margin:0;color:var(--accent)">Restock — Instant Invoice</h2>
+            <div class="small muted">Invoice #: ${escapeHtml(inv.invoice)}</div>
+          </div>
+          <div style="text-align:right">
+            <div class="muted small">Date: ${new Date(inv.date).toLocaleDateString()}</div>
+            <div style="font-weight:700;font-size:18px;margin-top:6px">₹ ${Number(inv.sale).toFixed(2)}</div>
+          </div>
+        </header>
+
+        <table>
+          <thead><tr><th style="text-align:left">Item</th><th>Qty</th><th>Rate</th><th style="text-align:right">Amount</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>${escapeHtml(inv.item)}</td>
+              <td>1</td>
+              <td>₹ ${Number(inv.sale).toFixed(2)}</td>
+              <td style="text-align:right">₹ ${Number(inv.sale).toFixed(2)}</td>
+            </tr>
+          </tbody>
+          <tfoot>
+            <tr><td colspan="3" style="text-align:right">Subtotal</td><td style="text-align:right">₹ ${Number(inv.sale).toFixed(2)}</td></tr>
+            <tr><td colspan="3" style="text-align:right">Cost / Deductible</td><td style="text-align:right">₹ ${Number(inv.cost).toFixed(2)}</td></tr>
+            <tr><td colspan="3" style="text-align:right;font-weight:700">Net</td><td style="text-align:right;font-weight:700">₹ ${(Number(inv.sale)-Number(inv.cost)).toFixed(2)}</td></tr>
+          </tfoot>
+        </table>
+
+        <div style="margin-top:12px" class="muted small">
+          This invoice was generated instantly above the sales list (restored UX). Save/Print via browser controls. Add sale to records by pressing 'Add Sale'.
+        </div>
+      `;
+      invoiceArea.innerHTML = html;
+      openModal();
+    });
+
+    // Modal helpers
+    function openModal(){ modal.style.display='flex'; modal.setAttribute('aria-hidden','false'); }
+    function closeModal(){ modal.style.display='none'; modal.setAttribute('aria-hidden','true'); }
+
+    document.getElementById('closeModal').addEventListener('click', closeModal);
+    document.getElementById('printBtn').addEventListener('click', ()=>{
+      // Print only invoiceArea
+      const printWindow = window.open('', '_blank', 'width=800,height=700');
+      const styles = document.querySelector('style').innerHTML;
+      printWindow.document.write(`<html><head><title>Invoice</title><style>${styles} body{background:#fff;color:#000} .invoice{background:#fff;color:#000} table{border-collapse:collapse} th,td{border:1px solid #ddd;padding:8px}</style></head><body>${invoiceArea.innerHTML}</body></html>`);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(()=>printWindow.print(), 500);
+    });
+
+    document.getElementById('downloadPdf').addEventListener('click', ()=>{
+      alert('Use browser Print → Save as PDF to download. (This triggers the browser print dialog.)');
+      document.getElementById('printBtn').click();
+    });
+
+    // Add sale button logic
+    document.getElementById('addSaleBtn').addEventListener('click', ()=>{
+      const inv = invoiceNo.value || `INV-${Date.now().toString().slice(-6)}`;
+      const row = {
+        invoice: inv,
+        item: itemName.value || 'Item',
+        sale: Number(saleAmount.value || 0),
+        cost: Number(costAmount.value || 0),
+        date: new Date().toISOString()
+      };
+      addSale(row);
+      // reset fields (optional)
+      itemName.value=''; saleAmount.value='0'; costAmount.value='0'; invoiceNo.value='';
+    });
+
+    // sample add
+    document.getElementById('addSample').addEventListener('click', ()=>{
+      const sample = {invoice:`INV-${Math.floor(Math.random()*90000)+10000}`, item:'Sample Item', sale: Math.round(500 + Math.random()*4500), cost: Math.round(100 + Math.random()*300), date: new Date().toISOString()};
+      addSale(sample);
+    });
+
+    // month change
+    monthSelect.addEventListener('change', ()=>{
+      renderSales();
+      computeMonthSummary();
+    });
+
+    // initial render
+    renderSales();
+    computeMonthSummary();
+
+    // wire up invoice buttons inside sales rows created later by render
+    salesTbody.addEventListener('click', (e)=>{
+      // delegated (already handled in renderSales)
+    });
+
+    // --- small helper: keep UI updating if localStorage changed elsewhere
+    window.addEventListener('storage', ()=> {
+      const remote = JSON.parse(localStorage.getItem(SALES_KEY) || '[]');
+      if(JSON.stringify(remote) !== JSON.stringify(sales)){
+        // merge simple: replace local copy and rerender
+        while(sales.length) sales.pop();
+        remote.forEach(r => sales.push(r));
+        renderSales(); computeMonthSummary();
+      }
+    });
+
+    // run an initial check: if no sales, create a sample helpful one for demo
+    if(sales.length === 0){
+      // do nothing automatically — user can press "Add Sample Sale"
+    }
+
+  </script>
+</body>
+</html>
+<link rel="stylesheet" href="style.css">
+<script src="script.js"></script>
